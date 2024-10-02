@@ -2,7 +2,16 @@
 import { defineConfig } from 'cypress';
 import createBundler from '@bahmutov/cypress-esbuild-preprocessor';
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config();
+
+const apiKey = process.env.APIKEY;
+const userId = process.env.USER_ID;
+const username = process.env.USERNAME;
+const password = process.env.PASSWORD;
+if (!apiKey || !userId || !username || !password) {
+	throw new Error('Missing environment variables');
+}
 
 type Envs = 'dev' | 'qa' | 'stage' | 'prod';
 const enviroments = {
@@ -45,7 +54,7 @@ export default defineConfig({
 	e2e: {
 		baseUrl: baseUrl,
 		// Glob pattern to determine what test files to load:
-		specPattern: ['cypress/e2e/**/*.cy.{js,jsx,ts,tsx}'],
+		specPattern: ['cypress/e2e/**/*.cy.{js,jsx,ts,tsx}', 'cypress/e2e/**/*.api.cy.{js,jsx,ts,tsx}'],
 		excludeSpecPattern: ['cypress/e2e/**/*.example.cy.js'],
 		// Use Cypress plugins:
 		setupNodeEvents(on, config) {
@@ -55,5 +64,9 @@ export default defineConfig({
 			return config;
 		}
 	},
-	env: {}
+	env: {
+		userId,
+		username,
+		password
+	}
 });

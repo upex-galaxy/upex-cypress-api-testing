@@ -2,8 +2,8 @@
 #! NO NECESITAS MODIFICAR NADA de este archivo...
 #*🚀 Solo necesitas configurar los valores en el Panel "Run workflow" de GitHub Actions
 #* 🧪 Este PIPELINE ejecutará primero un Smoke y luego la Regresión.
-name: 🧪 UPEX CI/CD Regression Pipeline
-run-name: ${{github.actor}}👨🏻‍🔬 triggered Regression in ${{github.ref_name}}
+name: 🧪 UPEX CI/CD Integration Pipeline
+run-name: ${{github.actor}}👨🏻‍🔬 triggered Integration in ${{github.ref_name}}
 
 on:
   #* manual trigger:
@@ -33,8 +33,9 @@ on:
         - PROD #? donde los usuarios finales usan la App.
 
 jobs:
-  SmokeTest:
-    #? El Pipeline "Smoke" es una estrategia de prueba perfecta para verificar que todos los servicios de la aplicación funcionen como se espera después de nuevas implementaciones y lanzamientos, y útil antes de correr una Regresión. Se recomienda pruebas a nivel "Integration" para esta estraegia de pruebas.
+  IntegrationTesting:
+    #? El Pipeline "Integration" es una estrategia de prueba perfecta para verificar que los módulos de la API funcionen correctamente.
+    #? También se usa como "Story Testing" para ejecuciones de pruebas de cobertura de US (importar resultados a Jira XRay).
     runs-on: ${{ github.event.inputs.system }}
     environment:
       name: ${{ github.event.inputs.environment }}
@@ -67,44 +68,7 @@ jobs:
       with:
         browser: chrome
         command: |
-          bun run test:smoke:ci
-
-  RegressionTesting:
-    needs: [SmokeTest] #? correrá después de que el SmokeTest haya terminado exitosamente.
-    #? El Pipeline "Regression" es una estrategia de prueba perfecta para verificar que todas las funcionalidades de la aplicación funcionen como se espera después de nuevas implementaciones y lanzamientos. Se recomienda pruebas a nivel "End-to-End" para esta estrategia de pruebas.
-    runs-on: ${{ github.event.inputs.system }}
-    environment:
-      name: ${{ github.event.inputs.environment }}
-    env:
-      MOCHA_REPORT_DIR: cypress/tests_reports/chrome_mocha_report
-
-    steps:
-    - name: 📘 Checkout Repo
-      uses: actions/checkout@v4
-
-    - name: 💽 Installing Node.js v20
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-
-    - name: 🍙 Bun Setup
-      uses: oven-sh/setup-bun@v2
-      with:
-        bun-version: latest
-
-    - name: 🧬 Install Project Dependencies
-      run: bun install
-
-    - name: 🔎 Check Typescript Code
-      run: | #? Corre el linter de TypeScript para verificar errores de sintaxis.
-        bun run check:ts
-
-    - name: 🧪 Cypress Run Sanity Test
-      uses: cypress-io/github-action@v4
-      with:
-        browser: chrome
-        command: |
-          bun run regression:chrome:ci
+          bun run api
 
     - name: 📬 Generate JUnit/Mocha Report
       if: always()
@@ -166,7 +130,7 @@ jobs:
         #* -----------------------------------------
 
   Ari-Slack-Notification:
-    needs: [SmokeTest, RegressionTesting]
+    needs: [IntegrationTesting]
     if: always() #? correrá después de que el SmokeTest y RegressionTesting hayan terminado.
     runs-on: ubuntu-latest
     steps:
@@ -176,5 +140,5 @@ jobs:
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         SLACK_USERNAME: Ari✨
         SLACK_MESSAGE: '🧪(${{ github.repository }}): ${{ github.actor }} triggered Regression🚀'
-        SLACK_COLOR: ${{ needs.RegressionTesting.result }}
+        SLACK_COLOR: ${{ needs.IntegrationTesting.result }}
         SLACK_ICON: ${{ secrets.ARI_PROFILE }}

@@ -79,6 +79,7 @@
 			"alias": {
 				"map": [
 					["@pages", "./cypress/support/pages"],
+					["@api", "./cypress/support/api"],
 					["@helper", "./cypress/support/helper"],
 					["@data", "./cypress/fixtures/data"]
 				],
